@@ -62,6 +62,8 @@
           <span class="comment" v-for="comment in filteredMoviesID.comment_list">{{ comment }}</span>
         </div>
       </div>
+      <el-input type="text" v-model="content" placeholder="说两句"></el-input>
+      <el-button type="success" style="float: right; margin: 5px auto;" @click="comment">发布</el-button>
     </el-card>
     <div class="background"></div>
     <el-pagination layout="prev, pager, next" :total="1000" @current-change="handleCurrentChange"/>
@@ -119,6 +121,44 @@ const route = useRoute();
 const movieid = route.params.id;
 const movieId = ref();
 let score = ref();
+let content = ref('');
+
+
+const comment = () => {
+  if (!store.state.user.is_login) {
+    ElMessage({
+      message: '请先登录后再进行评论',
+      type: 'warning',
+    })
+  } else {
+    $.ajax({
+      url: 'http://8.130.99.147:8000/api/comment/',
+      type: 'POST',
+      data: {
+        movieid: movieId.value,
+        userid: store.state.user.userid,
+        content: content.value,
+      },
+      success: response => {
+        if (response.result === 'success') {
+          console.log(response);
+          ElMessage({
+            message: '评论成功',
+            type: 'success',
+          })
+        } else {
+          ElMessage({
+            message: response.result,
+            type: 'error',
+          })
+        }
+      }
+    })
+    // console.log(movieId.value);
+  }
+  // console.log(score.value);
+};
+
 
 onMounted(
     () => {
@@ -163,7 +203,7 @@ const getMovieDetail = id => {
   // console.log(id);
   movieId.value = id
   movieDetailShow.value = !movieDetailShow.value;
-  console.log(movieId.value)
+  // console.log(movieId.value)
 };
 function CloseDetails(){
   movieDetailShow.value = !movieDetailShow.value;

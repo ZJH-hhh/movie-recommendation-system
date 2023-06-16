@@ -73,7 +73,7 @@ const IsStore = ref('message')
 onMounted(
     () => {
       $.ajax({
-        url: 'http://8.130.99.147:8000/api/get_data_by_tags/',
+        url: 'http://8.130.99.147:8000/api/recommend/',
         success: response => {
           // console.log(response);
           response.data.forEach(element => {

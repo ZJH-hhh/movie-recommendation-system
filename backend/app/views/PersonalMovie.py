@@ -1,18 +1,43 @@
-from django.shortcuts import render
-from django.views.decorators.http import require_http_methods
-# Create your views here.
-from django.http import JsonResponse
-from app.models import Movies, Details, NewUser
-from django.core import serializers
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from app.models import Movies, NewUser
 import json
+from django.core import serializers
 
 
-@require_http_methods(["GET", "POST"])
-def PersonalMovie(request):
-    response = {}
-    user_id = request.GET.get('userid')
-    movies_id = NewUser.objects.get(id=user_id).favor_movies
-    movies_data = Movies.objects.filter(movie_id__in=movies_id)
-    response['data'] = json.loads(serializers.serialize("json", movies_data))
-    # print(movies_id, type(movies_id), movies_data)
-    return JsonResponse(response, json_dumps_params={'ensure_ascii': False})
+class PersonalView(APIView):
+    def get(self, request):
+        try:
+            userid = request.GET.get('userid')
+            method = request.GET.get('method')
+            if method == '我的收藏':
+                movies_id = NewUser.objects.get(id=userid).favor_movies
+                movies_data = Movies.objects.filter(movie_id__in=movies_id)
+                data = json.loads(serializers.serialize("json", movies_data))
+                return Response({
+                    'result': 'success',
+                    'data': data
+                })
+            elif method == '我的评论':
+                movies_data = NewUser.objects.get(id=userid).contents
+                data = []
+                for item in movies_data:
+                    movieid = list(item.keys())[0]
+                    content = list(item.values())[0]
+                    movie = Movies.objects.get(movie_id=movieid)
+                    data.append({
+                        'movieid': movie.movie_id,
+                        'movie_title': movie.movie_title,
+                        'movie_photo': movie.img_url,
+                        'content': content
+                    })
+                # movies_data = Movies.objects.filter(movie_id__in=movies_id)
+                # res = json.loads(serializers.serialize("json", data))
+            return Response({
+                'result': 'success',
+                'data': data
+            })
+        except Exception as e:
+            return Response({
+                'result': str(e)
+            })

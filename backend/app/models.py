@@ -42,6 +42,7 @@ class NewUser(AbstractUser):
     favor_tags = models.JSONField(null=True)
     favor_movies = models.JSONField(null=True)
     photo = models.URLField(null=True)
+    contents = models.JSONField(null=True, default=list)
 
     objects = UserManager()
 
