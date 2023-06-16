@@ -2,7 +2,7 @@
   <div class="common-layout">
     <el-container>
       <AppHeader />
-      <el-main>
+      <el-main class="main">
         <RouterView/>
       </el-main>
       <el-footer></el-footer>
@@ -17,4 +17,8 @@ import AppHeader from '@/components/AppHeader.vue'
 
 </script>
 
-<style></style>
+<style scoped>
+.main {
+  overflow-y: auto;
+}
+</style>

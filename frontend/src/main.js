@@ -4,10 +4,12 @@ import router from './router'
 import ElementPlus from 'element-plus';
 import 'element-plus/dist/index.css'
 import '@/assets/reset.css'
+import store from './store'
 
 const app = createApp(App);
 app.use(ElementPlus);
 app.use(router);
+app.use(store);
 app.mount('#app');
 
 // createApp(App).use(store).use(router).use(ElementPlus).mount('#app')
