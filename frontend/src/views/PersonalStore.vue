@@ -28,6 +28,7 @@
                 {{ movie.content }}
               </el-rol>
             </el-row>
+            <el-button type="danger" style="float: right; margin-bottom: 5px;" @click="delete_comment(movie.id, movie.content)">删除</el-button>
           </el-card>
         </li>
       </ul>
@@ -73,6 +74,34 @@ export default {
       return props.item === '我的收藏';
     }
 
+    const delete_comment = (movieid, content) => {
+      $.ajax({
+        url: 'http://8.130.99.147:8000/api/deletecomment/',
+        type: 'POST',
+        data: {
+          userid: store.state.user.userid,
+          movieid: movieid,
+          content: content,
+        },
+        success: response => {
+          if (response.result === 'success'){
+              ElMessage({
+                message: '删除成功',
+                type: 'success',
+              })
+              // IsStore.value = 'warning'
+              // store.dispatch('update');
+            getMovies(props.item);
+          } else {
+            ElMessage({
+              message: '服务器繁忙',
+              type: 'error',
+            })
+          }
+        }
+      })
+    }
+
       const getMovies = method => {
         // console.log(method);
         if (method === '我的收藏') {
@@ -84,9 +113,7 @@ export default {
               method: method,
             },
             success: response => {
-              console.log(response);
               // console.log(response);
-              // movies.value = {};
               movies.splice(0, movies.length);
               response.data.forEach(element => {
                 movies.push({
@@ -113,11 +140,8 @@ export default {
               method: method,
             },
             success: response => {
-              console.log(response);
               // console.log(response);
-              // movies.value = {};
               movies.splice(0, movies.length);
-              // console.log(response);
               response.data.forEach(element => {
                 movies.push({
                   id: element.movieid,
@@ -170,6 +194,7 @@ export default {
       toggleStore,
       StarFilled,
       check,
+      delete_comment,
     }
   }
 }

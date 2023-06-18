@@ -10,7 +10,7 @@ import json
 @require_http_methods(["GET", "POST"])
 def data2frontend(request):
     response = {}
-    data = Movies.objects.all()[:36]
+    data = Movies.objects.all()[:360]
     response['data'] = json.loads(serializers.serialize("json", data))
     return JsonResponse(response, json_dumps_params={'ensure_ascii': False})
 

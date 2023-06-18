@@ -4,7 +4,7 @@ from app.views.write_data import data_clean, write_detais
 from app.views.All_Data2Frontend import data2frontend, data_filter_by_tags, data_filter_by_id
 from app.views.StoreMovie import StoreMovie
 from app.views.UnStoreMovie import UnStoreMovie
-from app.views.Recommend import Recommend
+from app.views.Recommend import Recommend, RandomRecommend
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -17,6 +17,7 @@ from app.views.assess import AssessView
 from app.views.rank import RankView
 from app.views.PersonalMovie import PersonalView
 from app.views.comment import CommentView
+from app.views.deleteComment import DeleteCommentView
 
 urlpatterns = [
     path('test/', test),
@@ -37,4 +38,6 @@ urlpatterns = [
     path('personalmovie/', PersonalView.as_view(), name='personal'),
     path('comment/', CommentView.as_view(), name='comment'),
     path('recommend/', Recommend),
+    path('randomrecommend/', RandomRecommend),
+    path('deletecomment/', DeleteCommentView.as_view(), name='deletecomment'),
 ]

@@ -1,9 +1,14 @@
 <template>
+  <meta name=referrer content=no-referrer>
   <div class="example-pagination-block">
-    <div class="example-demonstration"><el-button type="primary">Primary</el-button>
+    <div class="example-demonstration">
+      <div class="button-container">
+        <el-button type="primary" @click="randomRecommend" class="centered-button">随机推荐</el-button>
+        <el-button type="primary" @click="guessLikes" class="centered-button">猜你喜欢</el-button>
+      </div>
     <div class="movies">
       <ul class="horizontal-list">
-        <li v-for="movie in filteredMovies.slice((currentPage - 1) * 12, currentPage * 12)" :key="movie.id"  @mouseenter="showMovieInfo(movie)" @mouseleave="hideMovieInfo()" style="height: 310px;width: 200px;">
+        <li v-for="movie in filteredMovies" :key="movie.id"  @mouseenter="showMovieInfo(movie)" @mouseleave="hideMovieInfo()" style="height: 310px;width: 200px;">
           <el-menu v-if="movieInfo.show && movieInfo.movie === movie">
             <div class="movie-detail" @click="getMovieDetail(movie.id)" style="height: 330px; overflow: hidden; text-overflow: ellipsis;">
               <video autoplay controls width="200" style="border-radius: 8px 8px 0px 0px">
@@ -47,13 +52,15 @@
           <el-button text style="font-size:30px; position: absolute; top: 10px; right: 10px" :icon="Close" @click="CloseDetails"/>
         </div>
         <el-button text style="font-size:30px" @click="toggleStore" :icon="StarFilled" :type="IsStore"/>
+        <el-rate v-model="score" allow-half style="float: right" @click="assess" />
         <div class="comment-container">
           <span class="comment" v-for="comment in filteredMoviesID.comment_list">{{ comment }}</span>
         </div>
       </div>
+      <el-input type="text" v-model="content" placeholder="说两句"></el-input>
+      <el-button type="success" style="float: right; margin: 5px auto;" @click="comment">发布</el-button>
     </el-card>
     <div class="background"></div>
-    <el-pagination layout="prev, pager, next" :total="1000" @current-change="handleCurrentChange"/>
   </div>
 </template>
 <script setup>
@@ -61,7 +68,9 @@ import { ref, computed, onMounted, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import $ from 'jquery';
 import { StarFilled, Close } from '@element-plus/icons-vue'
-
+import { useStore } from 'vuex';
+import { ElMessage } from 'element-plus';
+import request from '@/utils/requests';
 
 const selectedTags = ref([]);
 const router = useRouter();
@@ -70,10 +79,15 @@ const movies = reactive([]);
 const currentPage = ref(1);
 const movieId = ref()
 const IsStore = ref('message')
+const store = useStore();
+let score = ref();
+let content = ref('');
+
 onMounted(
     () => {
-      $.ajax({
-        url: 'http://8.130.99.147:8000/api/recommend/',
+      if (! store.state.user.is_login) {
+        $.ajax({
+        url: 'http://8.130.99.147:8000/api/recommend?userid=0',
         success: response => {
           // console.log(response);
           response.data.forEach(element => {
@@ -92,9 +106,78 @@ onMounted(
           })
         }
       })
+      } else {
+        guessLikes()
+      }
     }
 )
 
+const comment = () => {
+  if (!store.state.user.is_login) {
+    ElMessage({
+      message: '请先登录后再进行评论',
+      type: 'warning',
+    })
+  } else {
+    $.ajax({
+      url: 'http://8.130.99.147:8000/api/comment/',
+      type: 'POST',
+      data: {
+        movieid: movieId.value,
+        userid: store.state.user.userid,
+        content: content.value,
+      },
+      success: response => {
+        if (response.result === 'success') {
+          console.log(response);
+          ElMessage({
+            message: '评论成功',
+            type: 'success',
+          })
+        } else {
+          ElMessage({
+            message: response.result,
+            type: 'error',
+          })
+        }
+      }
+    })
+    // console.log(movieId.value);
+  }
+  // console.log(score.value);
+};
+const assess = () => {
+  if (!store.state.user.is_login) {
+    ElMessage({
+      message: '请先登录后再进行评分',
+      type: 'warning',
+    })
+  } else {
+    $.ajax({
+      url: 'http://8.130.99.147:8000/api/assess/',
+      type: 'POST',
+      data: {
+        movieid: movieId.value,
+        score: score.value,
+      },
+      success: response => {
+        if (response.result === 'success') {
+          ElMessage({
+            message: '评价成功',
+            type: 'success',
+          })
+        } else {
+          ElMessage({
+            message: response.result,
+            type: 'error',
+          })
+        }
+      }
+    })
+    // console.log(movieId.value);
+  }
+  // console.log(score.value);
+}
 const movieInfo = ref({
   show: false,
   movie: null,
@@ -111,6 +194,25 @@ function CloseDetails(){
 }
 function toggleStore(){
   IsStore.value = IsStore.value === 'message' ? 'warning' : 'message';
+  if (!store.state.user.is_login) {
+    ElMessage({
+      message: '请先登录后再收藏',
+      type: 'warning',
+    })
+  }else {
+    request({
+        method: 'GET',
+        url: 'api/storemovie?userid=' + store.state.user.userid + '&movieid=' + movieId.value
+      }).then((res) => {
+        if (res.data.data === 'success'){
+          ElMessage({
+            message: '收藏成功',
+            type: 'success',
+          })
+          store.dispatch('update');
+        }
+      })
+  }
 }
 const filteredMovies = computed(() => {
   if (selectedTags.value.length === 0) {
@@ -139,6 +241,67 @@ function  hideMovieInfo() {
 function handleCurrentChange(val) {
   currentPage.value = val
   console.log(currentPage.value)
+}
+
+function randomRecommend(){
+  movies.splice(0)
+  $.ajax({
+        url: 'http://8.130.99.147:8000/api/randomrecommend' ,
+        success: response => {
+          // console.log(response);
+          response.data.forEach(element => {
+            movies.push({
+              id: element.fields.movie_id,
+              title: element.fields.movie_title,
+              actor_list: element.fields.actor_list,
+              image_url: element.fields.img_url,
+              tag_list: element.fields.movie_type_list,
+              region: element.fields.movie_regions_list,
+              movie_url: element.fields.movie_url,
+              trailer_url: element.fields.trailer_url,
+              comment_list: element.fields.comment_list,
+              introduction: element.fields.introduction,
+            })
+          })
+        }
+      })
+  store.dispatch('update');
+}
+
+function guessLikes() {
+  if (!store.state.user.is_login) {
+    ElMessage({
+      message: '请先登录',
+      type: 'warning',
+    })
+  } else {
+    movies.splice(0)
+  $.ajax({
+        url: 'http://8.130.99.147:8000/api/recommend?userid=' + store.state.user.userid,
+        success: response => {
+          // console.log(response);
+          response.data.forEach(element => {
+            movies.push({
+              id: element.fields.movie_id,
+              title: element.fields.movie_title,
+              actor_list: element.fields.actor_list,
+              image_url: element.fields.img_url,
+              tag_list: element.fields.movie_type_list,
+              region: element.fields.movie_regions_list,
+              movie_url: element.fields.movie_url,
+              trailer_url: element.fields.trailer_url,
+              comment_list: element.fields.comment_list,
+              introduction: element.fields.introduction,
+            })
+          })
+        }
+      })
+    ElMessage({
+      message: '推荐成功',
+      type: 'success',
+    })
+  store.dispatch('update');
+  }
 }
 </script>
 
@@ -263,4 +426,12 @@ function handleCurrentChange(val) {
   transition: backdrop-filter 0.3s; /* 添加过渡效果 */
 }
 
+.button-container {
+  display: flex;
+  justify-content: center;
+}
+
+.centered-button {
+  margin: 0 10px; /* 调整按钮之间的间距 */
+}
 </style>

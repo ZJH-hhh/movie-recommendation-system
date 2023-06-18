@@ -35,7 +35,7 @@ class PersonalView(APIView):
                 # res = json.loads(serializers.serialize("json", data))
             return Response({
                 'result': 'success',
-                'data': data
+                'data': reversed(data)
             })
         except Exception as e:
             return Response({
